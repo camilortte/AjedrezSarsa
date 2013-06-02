@@ -148,14 +148,14 @@ Sarsa::Sarsa()
 void Sarsa::aprender()
 {
     //inicializamos Q(s,s) arbitrariamente
-//    for (int i=0;i<NUMERO_ESTADOS;i++){
-//        for(int j=0;j<NUMERO_ACCIONES;j++){
-//           Q3[i][j]=0 + ((double)rand() / RAND_MAX) * (0 +1);
-//           Q[i][j]=0 + ((double)rand() / RAND_MAX) * (0 +1);
-//           //cout<<Q3[i][j]<<"  "<<Q[i][j]<<endl;
+    //    for (int i=0;i<NUMERO_ESTADOS;i++){
+    //        for(int j=0;j<NUMERO_ACCIONES;j++){
+    //           Q3[i][j]=0 + ((double)rand() / RAND_MAX) * (0 +1);
+    //           Q[i][j]=0 + ((double)rand() / RAND_MAX) * (0 +1);
+    //           //cout<<Q3[i][j]<<"  "<<Q[i][j]<<endl;
 
-//        }
-//    }
+    //        }
+    //    }
 
     int countador_movimientos=0;
     int refuerzo=0;
@@ -170,10 +170,12 @@ void Sarsa::aprender()
     //repetimos 100 veces
     for (int veces=0;veces<100;veces++){
         escenario->setReyNegro(0,7);
-        escenario->setDamaBlanca(1,4);
-        damaBlanca->setCoordenadas(1,4);
+        escenario->setDamaBlanca(5,5);
+        escenario->setReyBlanco(1,4);
+        reyNegro.setXY(1,4);
+        damaBlanca->setCoordenadas(5,5);
         bool gana=obtenerEstados();
-        insertarEstadosBasados(damaBlanca->getCoordenadas());
+        insertarEstadosBasados(damaBlanca->getCoordenadas(),escenario->getReyBlanco(),escenario->getReyNegro());
         int aprende=0;
         cout<<endl;
         pierde=false;
@@ -185,19 +187,28 @@ void Sarsa::aprender()
             countador_movimientos++;
             //cout<<" DESPUES DE LAS SETEADA -sdasdasdasdasdasd" <<endl;
             system("clear");
+            //imprimirListaAbierta();
             cout<<"---------------------------JUGADA NUMERO "<<countador_movimientos<<" ---------------------"<<endl;
             escenario->imprimirEscenario();
             //escojer una accion a' de Q(s',a') de forma e gredy
             Estado *estado=*listaAbierta.begin();
+            cout<<" Se va a escoger: "<<estado->getX()<<"  "<<estado->getY()<<endl;
             //ejecutar una accion y obtner S' y obtener R
             existeEstadop=existeEstado(estado);
             if(existeEstadop){
-                damaBlanca->setCoordenadas(estados_basados[indiceEstadoEncontrado].getX(),estados_basados[indiceEstadoEncontrado].getY());
-                escenario->setDamaBlanca(estados_basados[indiceEstadoEncontrado].getX(),estados_basados[indiceEstadoEncontrado].getY());
+                cout<<" le estado EXISTE "<<endl;
+                cout<<" Se va a escoger: "<<estados_basados[indiceEstadoEncontrado]->getX()<<" "<<
+                      estados_basados[indiceEstadoEncontrado]->getY()<<endl;
+                damaBlanca->setCoordenadas(estados_basados[indiceEstadoEncontrado]->getX(),
+                                           estados_basados[indiceEstadoEncontrado]->getY());
+                escenario->setDamaBlanca(estados_basados[indiceEstadoEncontrado]->getX(),
+                                         estados_basados[indiceEstadoEncontrado]->getY());
             }else{
+                cout<<"EL estaod no EXISTE"<<endl;
+                cout<<" Se va a escoger: "<<estado->getX()<<"  "<<estado->getY()<<endl;
                 damaBlanca->setCoordenadas(estado->getX(),estado->getY());
                 escenario->setDamaBlanca(estado->getX(),estado->getY());
-                insertarEstadosBasados(damaBlanca->getCoordenadas());
+                insertarEstadosBasados(damaBlanca->getCoordenadas(),escenario->getReyBlanco(),escenario->getReyNegro());
             }
             ///Sumamos +1 cuando gana -1 cuando queda en tablas, 0 de lo contrario
             //modificamos Q(s,a) = Q(s,a) + u [r+r(Q(s',a'))-Q(s,a)]
@@ -224,9 +235,9 @@ void Sarsa::aprender()
                 Estado *aux=*listaAbierta.begin();
                 ganoAux=obtenerEstados();
                 listaCerrada2[indiceEstadoEncontrado][0]->setF(
-                    listaCerrada2[indiceEstadoEncontrado][0]->getF()+
+                            listaCerrada2[indiceEstadoEncontrado][0]->getF()+
                         aprende*(refuerzo+refuerzo*(aux->getF()-listaCerrada2[indiceEstadoEncontrado][0]->getF()))
-                );
+                        );
 
             }
             cout<<"El PC responde: "<<endl;
@@ -237,7 +248,6 @@ void Sarsa::aprender()
 
             //ACA ES DONDE JUEGA EL JUGADOR
             pierde=movimientoJugador();
-
             gana=obtenerEstados();
             if(gana==true){
                 damaBlanca->setCoordenadas(escenario->getReyNegro().getX(),escenario->getReyNegro().getY());
@@ -253,6 +263,9 @@ void Sarsa::aprender()
 
         }
         gana=false;
+
+
+
         if(veces<100){
             cout<<"--------------------------------------------------"<<endl;
             cout<<"|              Comenzamos de nuevo                |"<<endl;
@@ -260,6 +273,8 @@ void Sarsa::aprender()
         }
     }
 }
+
+
 
 bool Sarsa::obtenerEstados()
 {
@@ -274,224 +289,240 @@ bool Sarsa::obtenerEstados()
 
     listaAbierta.clear();
 
-   reyNegro.setXY(escenario->getReyNegro().getX(),escenario->getReyNegro().getY());
-   Coordenada coordenadas=damaBlanca->getCoordenadas();
-   bool banderaStop=false;
-   int contador=1;
-   int ori_x=coordenadas.getX();
-   int ori_y=coordenadas.getY();
-   Estado *estado;
-   for(int i=0;i<8;i++){
-       contador=1;
-       banderaStop=false;       
-       switch (i){
-       case 0:
-           contador=1;
-           while(banderaStop!=true){
-               if (damaBlanca->moverArriba(contador)){                 
-                   estado=new Estado(damaBlanca->getCoordenadas().getX(),damaBlanca->getCoordenadas().getY(),i);
-                   estado->setG(0 + ((double)rand() / RAND_MAX) * (0 +1));
-                   if(!comprobarListaCerrada(estado)){
-                       listaAbierta.insert(estado);
-                   }                   
-                   if(damaBlanca->getCoordenadas().getX()==escenario->getReyNegro().getX() &&
-                           damaBlanca->getCoordenadas().getY()==escenario->getReyNegro().getY()){
-                       damaBlanca->setCoordenadas(ori_x,ori_y);
-                       escenario->setDamaBlanca(ori_x,ori_y);
-                       escenario->setReyNegro(reyNegro.getX(),reyNegro.getY());
-                       //cout<<"RETORNA TRUE"<<endl;
-                       return true;
-                   }
-                   damaBlanca->setCoordenadas(ori_x,ori_y);
+    reyNegro.setXY(escenario->getReyNegro().getX(),escenario->getReyNegro().getY());
+    Coordenada coordenadas=damaBlanca->getCoordenadas();
+    bool banderaStop=false;
+    int contador=1;
+    int ori_x=coordenadas.getX();
+    int ori_y=coordenadas.getY();
+    Estado *estado;
+    for(int i=0;i<8;i++){
+        contador=1;
+        banderaStop=false;
+        switch (i){
+        case 0:
+            contador=1;
+            while(banderaStop!=true){
+                if (damaBlanca->moverArriba(contador)){
+                    estado=new Estado(damaBlanca->getCoordenadas().getX(),damaBlanca->getCoordenadas().getY(),i
+                                      ,escenario->getReyBlanco(),escenario->getReyNegro());
+                    estado->setG(0 + ((double)rand() / RAND_MAX) * (0 +1));
+                    if(!comprobarListaCerrada(estado)){
+                       // cout<<"Se va a insertar un estado "<<estado->getX()<<" "<<estado->getY()<<endl;
+                        listaAbierta.insert(estado);
+                    }
+                    if(damaBlanca->getCoordenadas().getX()==escenario->getReyNegro().getX() &&
+                            damaBlanca->getCoordenadas().getY()==escenario->getReyNegro().getY()){
+                        damaBlanca->setCoordenadas(ori_x,ori_y);
+                        escenario->setDamaBlanca(ori_x,ori_y);
+                        escenario->setReyNegro(reyNegro.getX(),reyNegro.getY());
+                        //cout<<"RETORNA TRUE"<<endl;
+                        return true;
+                    }
+                    damaBlanca->setCoordenadas(ori_x,ori_y);
 
                 }else{
-                   banderaStop=true;
-               }
-               contador++;
-           }
-           break;
-       case 1:
-           contador=1;
-           while(banderaStop!=true){
-               if (damaBlanca->moberAbajo(contador)){
-                   estado=new Estado(damaBlanca->getCoordenadas().getX(),damaBlanca->getCoordenadas().getY(),i);
-                   estado->setG(0 + ((double)rand() / RAND_MAX) * (0 +1));
-                   if(!comprobarListaCerrada(estado)){
-                       listaAbierta.insert(estado);
-                   }
-                   if(damaBlanca->getCoordenadas().getX()==escenario->getReyNegro().getX() &&
-                           damaBlanca->getCoordenadas().getY()==escenario->getReyNegro().getY()){
-                       damaBlanca->setCoordenadas(ori_x,ori_y);
-                       escenario->setDamaBlanca(ori_x,ori_y);
-                       escenario->setReyNegro(reyNegro.getX(),reyNegro.getY());
-                       //cout<<"RETORNA TRUE"<<endl;
-                       return true;
-                   }
-                   damaBlanca->setCoordenadas(ori_x,ori_y);                   
+                    banderaStop=true;
+                }
+                contador++;
+            }
+            break;
+        case 1:
+            contador=1;
+            while(banderaStop!=true){
+                if (damaBlanca->moberAbajo(contador)){
+                    estado=new Estado(damaBlanca->getCoordenadas().getX(),damaBlanca->getCoordenadas().getY(),i
+                                      ,escenario->getReyBlanco(),escenario->getReyNegro());
+                    estado->setG(0 + ((double)rand() / RAND_MAX) * (0 +1));
+                    if(!comprobarListaCerrada(estado)){
+                        //cout<<"Se va a insertar un estado "<<estado->getX()<<" "<<estado->getY()<<endl;
+                        listaAbierta.insert(estado);
+                    }
+                    if(damaBlanca->getCoordenadas().getX()==escenario->getReyNegro().getX() &&
+                            damaBlanca->getCoordenadas().getY()==escenario->getReyNegro().getY()){
+                        damaBlanca->setCoordenadas(ori_x,ori_y);
+                        escenario->setDamaBlanca(ori_x,ori_y);
+                        escenario->setReyNegro(reyNegro.getX(),reyNegro.getY());
+                        //cout<<"RETORNA TRUE"<<endl;
+                        return true;
+                    }
+                    damaBlanca->setCoordenadas(ori_x,ori_y);
                 }else{
-                   banderaStop=true;
-               }
-               contador++;
-           }
-           break;
-       case 2:
-           contador=1;
-           while(banderaStop!=true){
-               if (damaBlanca->moverDerecha(contador)){
-                   estado=new Estado(damaBlanca->getCoordenadas().getX(),damaBlanca->getCoordenadas().getY(),i);
-                   estado->setG(0 + ((double)rand() / RAND_MAX) * (0 +1));
-                   if(!comprobarListaCerrada(estado)){
-                       listaAbierta.insert(estado);
-                   }
-                   if(damaBlanca->getCoordenadas().getX()==escenario->getReyNegro().getX() &&
-                           damaBlanca->getCoordenadas().getY()==escenario->getReyNegro().getY()){
-                       damaBlanca->setCoordenadas(ori_x,ori_y);
-                       escenario->setDamaBlanca(ori_x,ori_y);
-                       escenario->setReyNegro(reyNegro.getX(),reyNegro.getY());
-                       //cout<<"RETORNA TRUE"<<endl;
-                       return true;
-                   }
-                   damaBlanca->setCoordenadas(ori_x,ori_y);
+                    banderaStop=true;
+                }
+                contador++;
+            }
+            break;
+        case 2:
+            contador=1;
+            while(banderaStop!=true){
+                if (damaBlanca->moverDerecha(contador)){
+                    estado=new Estado(damaBlanca->getCoordenadas().getX(),damaBlanca->getCoordenadas().getY(),i
+                                      ,escenario->getReyBlanco(),escenario->getReyNegro());
+                    estado->setG(0 + ((double)rand() / RAND_MAX) * (0 +1));
+                    if(!comprobarListaCerrada(estado)){
+                       // cout<<"Se va a insertar un estado "<<estado->getX()<<" "<<estado->getY()<<endl;
+                        listaAbierta.insert(estado);
+                    }
+                    if(damaBlanca->getCoordenadas().getX()==escenario->getReyNegro().getX() &&
+                            damaBlanca->getCoordenadas().getY()==escenario->getReyNegro().getY()){
+                        damaBlanca->setCoordenadas(ori_x,ori_y);
+                        escenario->setDamaBlanca(ori_x,ori_y);
+                        escenario->setReyNegro(reyNegro.getX(),reyNegro.getY());
+                        cout<<"RETORNA TRUE"<<endl;
+                        return true;
+                    }
+                    damaBlanca->setCoordenadas(ori_x,ori_y);
                 }else{
-                   banderaStop=true;
-               }
-               contador++;
-           }
-           break;
-       case 3:
-           contador=1;
-           while(banderaStop!=true){
-               if (damaBlanca->moverIzquierda(contador)){
-                   estado=new Estado(damaBlanca->getCoordenadas().getX(),damaBlanca->getCoordenadas().getY(),i);
-                   estado->setG(0 + ((double)rand() / RAND_MAX) * (0 +1));
-                   if(!comprobarListaCerrada(estado)){
-                       listaAbierta.insert(estado);
-                   }
-                   if(damaBlanca->getCoordenadas().getX()==escenario->getReyNegro().getX() &&
-                           damaBlanca->getCoordenadas().getY()==escenario->getReyNegro().getY()){
-                       damaBlanca->setCoordenadas(ori_x,ori_y);
-                       escenario->setDamaBlanca(ori_x,ori_y);
-                       escenario->setReyNegro(reyNegro.getX(),reyNegro.getY());
-                       //cout<<"RETORNA TRUE"<<endl;
-                       return true;
-                   }
-                   damaBlanca->setCoordenadas(ori_x,ori_y);
+                    banderaStop=true;
+                }
+                contador++;
+            }
+            break;
+        case 3:
+            contador=1;
+            while(banderaStop!=true){
+                if (damaBlanca->moverIzquierda(contador)){
+                    estado=new Estado(damaBlanca->getCoordenadas().getX(),damaBlanca->getCoordenadas().getY(),i
+                                      ,escenario->getReyBlanco(),escenario->getReyNegro());
+                    estado->setG(0 + ((double)rand() / RAND_MAX) * (0 +1));
+                    if(!comprobarListaCerrada(estado)){
+                       // cout<<"Se va a insertar un estado "<<estado->getX()<<" "<<estado->getY()<<endl;
+                        listaAbierta.insert(estado);
+                    }
+                    if(damaBlanca->getCoordenadas().getX()==escenario->getReyNegro().getX() &&
+                            damaBlanca->getCoordenadas().getY()==escenario->getReyNegro().getY()){
+                        damaBlanca->setCoordenadas(ori_x,ori_y);
+                        escenario->setDamaBlanca(ori_x,ori_y);
+                        escenario->setReyNegro(reyNegro.getX(),reyNegro.getY());
+                        //cout<<"RETORNA TRUE"<<endl;
+                        return true;
+                    }
+                    damaBlanca->setCoordenadas(ori_x,ori_y);
                 }else{
-                   banderaStop=true;
-               }
-               contador++;
-           }
-           break;
-       case 4:
-           contador=1;
-           while(banderaStop!=true){
-               if (damaBlanca->moverDiagArribaDerecha(contador)){
-                   estado=new Estado(damaBlanca->getCoordenadas().getX(),damaBlanca->getCoordenadas().getY(),i);
-                   estado->setG(0 + ((double)rand() / RAND_MAX) * (0 +1));
-                   if(!comprobarListaCerrada(estado)){
-                       listaAbierta.insert(estado);
-                   }
-                   if(damaBlanca->getCoordenadas().getX()==escenario->getReyNegro().getX() &&
-                           damaBlanca->getCoordenadas().getY()==escenario->getReyNegro().getY()){
-                       damaBlanca->setCoordenadas(ori_x,ori_y);
-                       escenario->setDamaBlanca(ori_x,ori_y);
-                       escenario->setReyNegro(reyNegro.getX(),reyNegro.getY());
-                       //cout<<"RETORNA TRUE"<<endl;
-                       return true;
-                   }
-                   damaBlanca->setCoordenadas(ori_x,ori_y);
+                    banderaStop=true;
+                }
+                contador++;
+            }
+            break;
+        case 4:
+            contador=1;
+            while(banderaStop!=true){
+                if (damaBlanca->moverDiagArribaDerecha(contador)){
+                    estado=new Estado(damaBlanca->getCoordenadas().getX(),damaBlanca->getCoordenadas().getY(),i
+                                      ,escenario->getReyBlanco(),escenario->getReyNegro());
+                    estado->setG(0 + ((double)rand() / RAND_MAX) * (0 +1));
+                    if(!comprobarListaCerrada(estado)){
+                       // cout<<"Se va a insertar un estado "<<estado->getX()<<" "<<estado->getY()<<endl;
+                        listaAbierta.insert(estado);
+                    }
+                    if(damaBlanca->getCoordenadas().getX()==escenario->getReyNegro().getX() &&
+                            damaBlanca->getCoordenadas().getY()==escenario->getReyNegro().getY()){
+                        damaBlanca->setCoordenadas(ori_x,ori_y);
+                        escenario->setDamaBlanca(ori_x,ori_y);
+                        escenario->setReyNegro(reyNegro.getX(),reyNegro.getY());
+                        //cout<<"RETORNA TRUE"<<endl;
+                        return true;
+                    }
+                    damaBlanca->setCoordenadas(ori_x,ori_y);
                 }else{
-                   banderaStop=true;
-               }
-               contador++;
-           }
-           break;
-       case 5:
-           contador=1;
-           while(banderaStop!=true){
-               if (damaBlanca->moverDiagArribaIzquierda(contador)){
-                   estado=new Estado(damaBlanca->getCoordenadas().getX(),damaBlanca->getCoordenadas().getY(),i);
-                   estado->setG(0 + ((double)rand() / RAND_MAX) * (0 +1));
-                   if(!comprobarListaCerrada(estado)){
-                       listaAbierta.insert(estado);
-                   }
-                   if(damaBlanca->getCoordenadas().getX()==escenario->getReyNegro().getX() &&
-                           damaBlanca->getCoordenadas().getY()==escenario->getReyNegro().getY()){
-                       damaBlanca->setCoordenadas(ori_x,ori_y);
-                       escenario->setDamaBlanca(ori_x,ori_y);
-                       escenario->setReyNegro(reyNegro.getX(),reyNegro.getY());
-                       //cout<<"RETORNA TRUE"<<endl;
-                       return true;
-                   }
-                   damaBlanca->setCoordenadas(ori_x,ori_y);
+                    banderaStop=true;
+                }
+                contador++;
+            }
+            break;
+        case 5:
+            contador=1;
+            while(banderaStop!=true){
+                if (damaBlanca->moverDiagArribaIzquierda(contador)){
+                    estado=new Estado(damaBlanca->getCoordenadas().getX(),damaBlanca->getCoordenadas().getY(),i
+                                      ,escenario->getReyBlanco(),escenario->getReyNegro());
+                    estado->setG(0 + ((double)rand() / RAND_MAX) * (0 +1));
+                    if(!comprobarListaCerrada(estado)){
+                        //cout<<"Se va a insertar un estado "<<estado->getX()<<" "<<estado->getY()<<endl;
+                        listaAbierta.insert(estado);
+                    }
+                    if(damaBlanca->getCoordenadas().getX()==escenario->getReyNegro().getX() &&
+                            damaBlanca->getCoordenadas().getY()==escenario->getReyNegro().getY()){
+                        damaBlanca->setCoordenadas(ori_x,ori_y);
+                        escenario->setDamaBlanca(ori_x,ori_y);
+                        escenario->setReyNegro(reyNegro.getX(),reyNegro.getY());
+                        cout<<"RETORNA TRUE"<<endl;
+                        return true;
+                    }
+                    damaBlanca->setCoordenadas(ori_x,ori_y);
                 }else{
-                   banderaStop=true;
-               }
-               contador++;
-           }
-           break;
-       case 6:
-           contador=1;
-           while(banderaStop!=true){
-               if (damaBlanca->moverDiagAbajoDerecha(contador)){
-                   estado=new Estado(damaBlanca->getCoordenadas().getX(),damaBlanca->getCoordenadas().getY(),i);
-                   estado->setG(0 + ((double)rand() / RAND_MAX) * (0 +1));
-                   if(!comprobarListaCerrada(estado)){
-                       listaAbierta.insert(estado);
-                   }
-                   if(damaBlanca->getCoordenadas().getX()==escenario->getReyNegro().getX() &&
-                           damaBlanca->getCoordenadas().getY()==escenario->getReyNegro().getY()){
-                       damaBlanca->setCoordenadas(ori_x,ori_y);
-                       escenario->setDamaBlanca(ori_x,ori_y);
-                       escenario->setReyNegro(reyNegro.getX(),reyNegro.getY());
-                       //cout<<"RETORNA TRUE"<<endl;
-                       return true;
-                   }
-                   damaBlanca->setCoordenadas(ori_x,ori_y);
+                    banderaStop=true;
+                }
+                contador++;
+            }
+            break;
+        case 6:
+            contador=1;
+            while(banderaStop!=true){
+                if (damaBlanca->moverDiagAbajoDerecha(contador)){
+                    estado=new Estado(damaBlanca->getCoordenadas().getX(),damaBlanca->getCoordenadas().getY(),i
+                                      ,escenario->getReyBlanco(),escenario->getReyNegro());
+                    estado->setG(0 + ((double)rand() / RAND_MAX) * (0 +1));
+                    if(!comprobarListaCerrada(estado)){
+                        //cout<<"Se va a insertar un estado "<<estado->getX()<<" "<<estado->getY()<<endl;
+                        listaAbierta.insert(estado);
+                    }
+                    if(damaBlanca->getCoordenadas().getX()==escenario->getReyNegro().getX() &&
+                            damaBlanca->getCoordenadas().getY()==escenario->getReyNegro().getY()){
+                        damaBlanca->setCoordenadas(ori_x,ori_y);
+                        escenario->setDamaBlanca(ori_x,ori_y);
+                        escenario->setReyNegro(reyNegro.getX(),reyNegro.getY());
+                        //cout<<"RETORNA TRUE"<<endl;
+                        return true;
+                    }
+                    damaBlanca->setCoordenadas(ori_x,ori_y);
                 }else{
-                   banderaStop=true;
-               }
-               contador++;
-           }
-           break;
-       case 7:
-           contador=1;
-           while(banderaStop!=true){
-               if (damaBlanca->moverDiagArribaIzquierda(contador)){
-                   estado=new Estado(damaBlanca->getCoordenadas().getX(),damaBlanca->getCoordenadas().getY(),i);
-                   estado->setG(0 + ((double)rand() / RAND_MAX) * (0 +1));
-                   if(!comprobarListaCerrada(estado)){
-                       listaAbierta.insert(estado);
-                   }
-                   if(damaBlanca->getCoordenadas().getX()==escenario->getReyNegro().getX() &&
-                           damaBlanca->getCoordenadas().getY()==escenario->getReyNegro().getY()){
-                       damaBlanca->setCoordenadas(ori_x,ori_y);
-                       escenario->setDamaBlanca(ori_x,ori_y);
-                       escenario->setReyNegro(reyNegro.getX(),reyNegro.getY());
-                       //cout<<"RETORNA TRUE"<<endl;
-                       return true;
-                   }
-                   damaBlanca->setCoordenadas(ori_x,ori_y);
+                    banderaStop=true;
+                }
+                contador++;
+            }
+            break;
+        case 7:
+            contador=1;
+            while(banderaStop!=true){
+                if (damaBlanca->moverDiagArribaIzquierda(contador)){
+                    estado=new Estado(damaBlanca->getCoordenadas().getX(),damaBlanca->getCoordenadas().getY(),i,
+                                      escenario->getReyBlanco(),escenario->getReyNegro());
+                    estado->setG(0 + ((double)rand() / RAND_MAX) * (0 +1));
+                    if(!comprobarListaCerrada(estado)){
+                       // cout<<"Se va a insertar un estado "<<estado->getX()<<" "<<estado->getY()<<endl;
+                        listaAbierta.insert(estado);
+                    }
+                    if(damaBlanca->getCoordenadas().getX()==escenario->getReyNegro().getX() &&
+                            damaBlanca->getCoordenadas().getY()==escenario->getReyNegro().getY()){
+                        damaBlanca->setCoordenadas(ori_x,ori_y);
+                        escenario->setDamaBlanca(ori_x,ori_y);
+                        escenario->setReyNegro(reyNegro.getX(),reyNegro.getY());
+                        //cout<<"RETORNA TRUE"<<endl;
+                        return true;
+                    }
+                    damaBlanca->setCoordenadas(ori_x,ori_y);
                 }else{
-                   banderaStop=true;
-               }
-               contador++;
-           }
-           break;
+                    banderaStop=true;
+                }
+                contador++;
+            }
+            break;
 
-       }
-      damaBlanca->setCoordenadas(ori_x,ori_y);
-      escenario->setDamaBlanca(ori_x,ori_y);
-      escenario->setReyNegro(reyNegro.getX(),reyNegro.getY());
-   }
-   return false;
+        }
+        damaBlanca->setCoordenadas(ori_x,ori_y);
+        escenario->setDamaBlanca(ori_x,ori_y);
+        escenario->setReyNegro(reyNegro.getX(),reyNegro.getY());
+    }
+    return false;
 }
 
 
 
 bool Sarsa::comprobarListaCerrada(Estado *estado)
 {
-   /* set<Estado*>::iterator it;
+    /* set<Estado*>::iterator it;
     for (it=listaCerrada.begin(); it!=listaCerrada.end(); ++it){
         if((*it)->getX()==estado->getX() && (*it)->getY()==estado->getY() && (*it)->getAccion()==estado->getAccion()){
 
@@ -502,30 +533,38 @@ bool Sarsa::comprobarListaCerrada(Estado *estado)
     return false;
 }
 
-void Sarsa::insertarEstadosBasados(Coordenada coordenadas)
+void Sarsa::insertarEstadosBasados(Coordenada coordenadasDama, Coordenada reyBlanco, Coordenada reyNegro)
 {
-    bool encontrado=false;
-    for(int i=0;i<estados_basados.size();i++){
-        if(estados_basados[i].getX()==coordenadas.getX() && estados_basados[i].getY()==coordenadas.getY()){
-            encontrado=true;
-            break;
-        }
-    }
-    if(encontrado!=true){
-        estados_basados.push_back(coordenadas);
-    }
+    //  bool encontrado=false;
+    //    for(int i=0;i<estados_basados.size();i++){
+    //        if(estados_basados[i].getX()==coordenadas.getX() && estados_basados[i].getY()==coordenadas.getY()){
+    //            encontrado=true;
+    //            break;
+    //        }
+    //    }
+    Estado *estadoNUevo=new Estado(coordenadasDama.getX(),coordenadasDama.getY(),-1,reyBlanco,reyNegro);
+    estados_basados.push_back(estadoNUevo);
+
 }
 
 bool Sarsa::existeEstado(Estado *estado)
 {
+    cout<<"LLega el estaod "<<estado->getX()<<" "<<estado->getY()<<endl;
     bool encontrado=false;
     for(int i=0;i<estados_basados.size();i++){
-        if(estados_basados[i].getX()==estado->getX() && estados_basados[i].getY()==estado->getY()){
-            encontrado=true;
+        if(estado->compararCoordenadas(estados_basados[i]->getX(),estados_basados[i]->getY(),
+                                       escenario->getReyBlanco(),escenario->getReyNegro())){
+            encontrado==true;
             indiceEstadoEncontrado=i;
             break;
         }
+        //        if(estados_basados[i].getX()==estado->getX() && estados_basados[i].getY()==estado->getY()){
+        //            encontrado=true;
+        //            indiceEstadoEncontrado=i;
+        //            break;
+        //        }
     }
+    cout<<"Se deuelve el estaod "<<estado->getX()<<" "<<estado->getY()<<endl;
     return false;
 }
 
@@ -538,8 +577,8 @@ bool Sarsa::movimientoJugador()
     re_y=escenario->getReyNegro().getY();
     bool malMovimiento=false;
     do{
-    cout<<"Es su turono: ";
-    cin>>movimiento;cout<<endl;
+        cout<<"Es su turono: ";
+        cin>>movimiento;cout<<endl;
         switch (movimiento[0]) {
         case 'a':
             if(re_y-1>=0){
@@ -636,6 +675,15 @@ bool Sarsa::movimientoJugador()
 
 }
 
+void Sarsa::imprimirListaAbierta()
+{
+    cout<<"EL contenido de la lista abierta"<<endl;
+    if(!listaAbierta.empty()){
+        for (std::set<Estado*>::iterator it=listaAbierta.begin(); it!=listaAbierta.end(); ++it)
+            cout<<"\t"<<(*it)->getX()<<" "<<(*it)->getY()<<endl;
+    }
+}
+
 
 
 
@@ -645,67 +693,67 @@ bool Sarsa::movimientoJugador()
 Coordenada *Sarsa::obtenerSolucion(Coordenada damaBlanca, Coordenada reyNegro)
 {
     Coordenada *coordenada=new Coordenada(-1,-1);
-     if (damaBlanca.getX()==2 && damaBlanca.getY()==3 && reyNegro.getX()==3 && reyNegro.getY()==6){
-         cout<<"E6"<<endl;
+    if (damaBlanca.getX()==2 && damaBlanca.getY()==3 && reyNegro.getX()==3 && reyNegro.getY()==6){
+        cout<<"E6"<<endl;
         coordenada->setXY(2,4);
     } else if (damaBlanca.getX()==3 && damaBlanca.getY()==4 && reyNegro.getX()==2 && reyNegro.getY()==6){
-         cout<<"E7"<<endl;
+        cout<<"E7"<<endl;
         coordenada=BASE_DATOS_MATE[1][2];
     } else if (damaBlanca.getX()==3 && damaBlanca.getY()==4 && reyNegro.getX()==0 && reyNegro.getY()==6){
-         cout<<"F6"<<endl;
+        cout<<"F6"<<endl;
         coordenada=BASE_DATOS_MATE[1][3];
     } else if (damaBlanca.getX()==3 && damaBlanca.getY()==4 && reyNegro.getX()==2 && reyNegro.getY()==7){
-         cout<<"F6"<<endl;
+        cout<<"F6"<<endl;
         coordenada=BASE_DATOS_MATE[1][6];
     } else if (damaBlanca.getX()==2 && damaBlanca.getY()==4 && reyNegro.getX()==4 && reyNegro.getY()==7){
-         cout<<"H6"<<endl;
+        cout<<"H6"<<endl;
         coordenada=BASE_DATOS_MATE[2][4];
     } else if (damaBlanca.getX()==2 && damaBlanca.getY()==4 && reyNegro.getX()==3 && reyNegro.getY()==7){
-         cout<<"G4"<<endl;
+        cout<<"G4"<<endl;
         coordenada=BASE_DATOS_MATE[2][5];
     } else if (damaBlanca.getX()==1 && damaBlanca.getY()==4 && reyNegro.getX()==3 && reyNegro.getY()==5){
-         cout<<"D6"<<endl;
+        cout<<"D6"<<endl;
         coordenada=BASE_DATOS_MATE[3][0];
     } else if (damaBlanca.getX()==1 && damaBlanca.getY()==4 && reyNegro.getX()==3 && reyNegro.getY()==7){
-         cout<<"G7"<<endl;
+        cout<<"G7"<<endl;
         coordenada=BASE_DATOS_MATE[3][5];
     } else if (damaBlanca.getX()==1 && damaBlanca.getY()==4 && reyNegro.getX()==2 && reyNegro.getY()==7){
-         cout<<"F7"<<endl;
+        cout<<"F7"<<endl;
         coordenada=BASE_DATOS_MATE[3][6];
     } else if (damaBlanca.getX()==1 && damaBlanca.getY()==4 && reyNegro.getX()==0 && reyNegro.getY()==7){
-         cout<<"G5"<<endl;
+        cout<<"G5"<<endl;
         coordenada=BASE_DATOS_MATE[3][8];
     } else if (damaBlanca.getX()==2 && damaBlanca.getY()==5 && reyNegro.getX()==3 && reyNegro.getY()==7){
-         cout<<"G7"<<endl;
+        cout<<"G7"<<endl;
         coordenada=BASE_DATOS_MATE[5][5];
     } else if (damaBlanca.getX()==2 && damaBlanca.getY()==5 && reyNegro.getX()==1 && reyNegro.getY()==7){
-         cout<<"F8"<<endl;
+        cout<<"F8"<<endl;
         coordenada=BASE_DATOS_MATE[5][7];
     } else if (damaBlanca.getX()==1 && damaBlanca.getY()==5 && reyNegro.getX()==3 && reyNegro.getY()==6){
-         cout<<"E6"<<endl;
+        cout<<"E6"<<endl;
         coordenada=BASE_DATOS_MATE[6][1];
     } else if (damaBlanca.getX()==0 && damaBlanca.getY()==5 && reyNegro.getX()==2 && reyNegro.getY()==6){
-         cout<<"E7"<<endl;
+        cout<<"E7"<<endl;
         coordenada=BASE_DATOS_MATE[7][2];
     } else if (damaBlanca.getX()==4 && damaBlanca.getY()==6 && reyNegro.getX()==2 && reyNegro.getY()==7){
-         cout<<"G8"<<endl;
+        cout<<"G8"<<endl;
         coordenada=BASE_DATOS_MATE[8][6];
     } else if (damaBlanca.getX()==3 && damaBlanca.getY()==6 && reyNegro.getX()==1 && reyNegro.getY()==7){
-         cout<<"E5"<<endl;
+        cout<<"E5"<<endl;
         coordenada=BASE_DATOS_MATE[9][7];
     } else if (damaBlanca.getX()==1 && damaBlanca.getY()==6 && reyNegro.getX()==4 && reyNegro.getY()==7){
-         cout<<"H6"<<endl;
+        cout<<"H6"<<endl;
         coordenada=BASE_DATOS_MATE[10][4];
     } else if (damaBlanca.getX()==0 && damaBlanca.getY()==6 && reyNegro.getX()==3 && reyNegro.getY()==7){
-         cout<<"G7"<<endl;
+        cout<<"G7"<<endl;
         coordenada=BASE_DATOS_MATE[11][5];
     } else if (damaBlanca.getX()==0 && damaBlanca.getY()==6 && reyNegro.getX()==2 && reyNegro.getY()==7){
-         cout<<"F7"<<endl;
+        cout<<"F7"<<endl;
         coordenada=BASE_DATOS_MATE[11][6];
     } else {
-         cout<<"NULL"<<endl;
+        cout<<"NULL"<<endl;
         coordenada=NULL;
     }
-     return coordenada;
+    return coordenada;
 }
 

@@ -3,7 +3,6 @@
 #include <vector>
 #include "escenario.h"
 #include "coordenada.h"
-#include "estado.h"
 #define TABLERO_FILAS 8
 #define TABLERO_COLUMNAS 8
 
@@ -12,8 +11,6 @@ using namespace std;
 class DamaBlanca
 {
 private:
-    vector <Estado> listaAbierta;
-    vector <Estado> listaCerrada;
     Coordenada coordenadas;
     Escenario *escenario;
     vector < Coordenada > estados_movimiento;

@@ -43,13 +43,13 @@ Escenario::Escenario()
         factor=10;
     }
 
-    mundo_ajedrez[1][4]="DB";
+    mundo_ajedrez[5][5]="DB";
     mundo_ajedrez[0][7]="RN";
-    mundo_ajedrez[5][5]="RB";
+    mundo_ajedrez[0][4]="RB";
 
-    coo_reyBlanco.setXY(5,5);
+    coo_reyBlanco.setXY(0,4);
     coo_reyNegro.setXY(0,7);
-    coo_damaBlanca.setXY(1,4);
+    coo_damaBlanca.setXY(5,5);
 
 
 

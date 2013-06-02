@@ -25,18 +25,25 @@ public:
      void setDamaBlanca(int x, int y ){
          this->mundo_ajedrez[coo_damaBlanca.getX()][coo_damaBlanca.getY()]="--";
          this->coo_damaBlanca.setXY(x,y);
-         this->mundo_ajedrez[coo_damaBlanca.getX()][coo_damaBlanca.getY()]="DB";
-         //setReyNegro(getReyNegro().getX(),getReyNegro().getY());
+         this->mundo_ajedrez[coo_damaBlanca.getX()][coo_damaBlanca.getY()]="DB";         
      }
 
      void setReyNegro(int x, int y ){
          //cout<<"Se ajusto R
          this->mundo_ajedrez[coo_reyNegro.getX()][coo_reyNegro.getY()]="--";
          this->coo_reyNegro.setXY(x,y);
-         this->mundo_ajedrez[coo_reyNegro.getX()][coo_reyNegro.getY()]="RN";
-
-         //this->imprimirEscenario();
+         this->mundo_ajedrez[coo_reyNegro.getX()][coo_reyNegro.getY()]="RN";         
      }
+
+
+     void setReyBlanco(int x, int y ){
+         //cout<<"Se ajusto R
+         cout<<"SE MODIFICARON LAS COOORDENADAS DE REY BLANOC"<<endl;
+         this->mundo_ajedrez[coo_reyBlanco.getX()][coo_reyBlanco.getY()]="--";
+         this->coo_reyBlanco.setXY(x,y);
+         this->mundo_ajedrez[coo_reyBlanco.getX()][coo_reyBlanco.getY()]="RBB";
+     }
+
 
 
 
